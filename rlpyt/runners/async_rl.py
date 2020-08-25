@@ -95,7 +95,7 @@ class AsyncRlBase(BaseRunner):
             self.log_diagnostics(0, 0, 0)
         log_counter = 0
         while True:  # Run until sampler hits n_steps and sets ctrl.quit=True.
-            logger.set_iteration(itr)
+            logger.set_iteration(self.ctrl.sampler_itr.value * self.sampler_batch_size)
             with logger.prefix(f"opt_itr #{itr} "):
                 while self.ctrl.sampler_itr.value < throttle_itr:
                     if self.ctrl.quit.value:
