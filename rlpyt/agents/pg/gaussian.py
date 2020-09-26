@@ -103,7 +103,12 @@ class RecurrentGaussianPgAgentBase(BaseAgent):
         dist_info = DistInfoStd(mean=mu, log_std=log_std)
         action = self.distribution.sample(dist_info)
         # Model handles None, but Buffer does not, make zeros if needed:
-        prev_rnn_state = self.prev_rnn_state or buffer_func(rnn_state, torch.zeros_like)
+        # prev_rnn_state = self.prev_rnn_state or buffer_func(rnn_state, torch.zeros_like)
+        if self.prev_rnn_state is None:
+            prev_rnn_state = buffer_func(rnn_state, torch.zeros_like)
+        else:
+            prev_rnn_state = self.prev_rnn_state
+
         # Transpose the rnn_state from [N,B,H] --> [B,N,H] for storage.
         # (Special case: model should always leave B dimension in.)
         prev_rnn_state = buffer_method(prev_rnn_state, "transpose", 0, 1)
