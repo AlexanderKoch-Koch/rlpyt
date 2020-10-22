@@ -5,6 +5,7 @@ import psutil
 import torch
 from collections import deque
 import math
+import numpy as np
 
 from rlpyt.runners.base import BaseRunner
 from rlpyt.utils.quick_args import save__init__args
@@ -387,15 +388,17 @@ class AsyncRlBase(BaseRunner):
         if traj_infos is None:
             traj_infos = self._traj_infos
         if traj_infos:
-            for k in traj_infos[0]:
-                if not k.startswith("_"):
-                    logger.record_tabular_misc_stat(k,
-                        [info[k] for info in traj_infos])
+            with logger.tabular_prefix('Traj_Infos/'):
+                for k in traj_infos[0]:
+                    if not k.startswith("_"):
+                        # logger.record_tabular_misc_stat(k,
+                        #     [info[k] for info in traj_infos])
+                        logger.record_tabular(k, np.nanmean([info[k] for info in traj_infos]))
 
         if self._opt_infos:
             for k, v in self._opt_infos.items():
                 logger.record_tabular_misc_stat(k, v)
-        self._opt_infos = {k: list() for k in self._opt_infos}  # (reset)
+            self._opt_infos = {k: list() for k in self._opt_infos}  # (reset)
 
 
 class AsyncRl(AsyncRlBase):

@@ -459,11 +459,11 @@ def record_tabular_misc_stat(key, values, placement='back'):
         if _tf_summary_writer is not None:
             prefix += "/"  # Group stats together in Tensorboard.
     if len(values) > 0:
-        record_tabular(prefix + "Average" + suffix, np.average(values))
-        record_tabular(prefix + "Std" + suffix, np.std(values))
-        record_tabular(prefix + "Median" + suffix, np.median(values))
-        record_tabular(prefix + "Min" + suffix, np.min(values))
-        record_tabular(prefix + "Max" + suffix, np.max(values))
+        record_tabular(prefix + "Average" + suffix, np.nanmean(values))
+        record_tabular(prefix + "Std" + suffix, np.nanstd(values))
+        record_tabular(prefix + "Median" + suffix, np.nanmedian(values))
+        record_tabular(prefix + "Min" + suffix, np.nanmin(values))
+        record_tabular(prefix + "Max" + suffix, np.nanmax(values))
     else:
         record_tabular(prefix + "Average" + suffix, np.nan)
         record_tabular(prefix + "Std" + suffix, np.nan)
