@@ -85,3 +85,57 @@ class MujocoFfModel(torch.nn.Module):
     def update_obs_rms(self, observation):
         if self.normalize_observation:
             self.obs_rms.update(observation)
+
+
+
+
+class MujocoVmpoFfModel(torch.nn.Module):
+    """
+    Model commonly used in Mujoco locomotion agents: an MLP which outputs
+    distribution means, separate parameter for learned log_std, and separate
+    MLP for state-value estimate.
+    """
+
+    def __init__(
+            self,
+            observation_shape,
+            action_size,
+            linear_value_output=True,
+            layer_norm=False
+    ):
+        """Instantiate neural net modules according to inputs."""
+        super().__init__()
+        self._obs_ndim = len(observation_shape)
+        input_size = int(np.prod(observation_shape))
+        self.action_size = action_size
+        self.layer_norm = torch.nn.LayerNorm(input_size) if layer_norm else None
+        self.mu_mlp = MlpModel(
+            input_size=input_size,
+            hidden_sizes=[512, 256, 256],
+            output_size=2 * action_size,
+        )
+        list(self.mu_mlp.parameters())[-1].data = list(self.mu_mlp.parameters())[-1].data / 100
+        list(self.mu_mlp.parameters())[-2].data = list(self.mu_mlp.parameters())[-2].data / 100
+        self.v = MlpModel(
+            input_size=input_size,
+            hidden_sizes=[512, 512, 256],
+            output_size=1 if linear_value_output else None,
+        )
+
+    def forward(self, observation, prev_action, prev_reward, init_rnn_state=None):
+        lead_dim, T, B, _ = infer_leading_dims(observation, self._obs_ndim)
+        assert not torch.any(torch.isnan(observation)), 'obs elem is nan'
+
+        obs_flat = observation.reshape(T * B, -1)
+        if self.layer_norm:
+            obs_flat = torch.tanh(self.layer_norm(obs_flat))
+        action = self.mu_mlp(obs_flat)
+        mu, std = (action[:, :self.action_size], action[:, self.action_size:])
+        std = torch.log(1 + torch.exp(std))  # softplus
+        v = self.v(obs_flat).squeeze(-1)
+
+        # Restore leading dimensions: [T,B], [B], or [], as input.
+        mu, std, v = restore_leading_dims((mu, std, v), lead_dim, T, B)
+        fake_rnn_state = torch.zeros(1, B, 1)
+        return mu, std, v, fake_rnn_state
+
