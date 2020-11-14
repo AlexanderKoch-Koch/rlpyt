@@ -136,6 +136,9 @@ class AlternatingActionServer:
 
         # Can easily write overlap and no overlap of workers versions.
         for t in range(self.batch_spec.T):
+            # s = time.time()
+            self.agent.recv_shared_memory()
+            # print(f'memory received in {time.time() - s}')
             for alt in range(2):
                 step_h = step_np_pair[alt]
                 for b in obs_ready_pair[alt]:
